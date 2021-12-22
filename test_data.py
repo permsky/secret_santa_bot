@@ -1,8 +1,14 @@
+from logging import _FormatStyle
 import os
 from pprint import pprint
 
 from dotenv import load_dotenv
 from rejson import Client, Path
+
+
+ADMINS = {
+    '723702214': '1'
+}
 
 
 GAMES = {
@@ -13,21 +19,18 @@ GAMES = {
                 'name': 'Виталий',
                 'wishlist': 'Книга',
                 'letter': 'Текст письма',
-                'is_admin': 'true',
             },
             '123456789': {
                 'email': 'example@mail.ru',
                 'name': 'Иван',
                 'wishlist': 'Книга',
                 'letter': 'Текст письма',
-                'is_admin': 'false',
             },
             '123456780': {
                 'email': 'example@gmail.ru',
                 'name': 'Василий',
                 'wishlist': 'Книга',
                 'letter': 'Текст письма',
-                'is_admin': 'false',
             },
         },
         'cost_limitation': 'true',
@@ -57,11 +60,15 @@ def print_db_content(db):
     games = db.jsonget('games', Path.rootPath())
     print('\nСписок игр:')
     pprint(games)
+    admins = db.jsonget('admins', Path.rootPath())
+    print('\nСписок администраторов игр:')
+    pprint(admins)
 
 
 def load_test_data_to_db(db, rewrite_bot_results=False):
     if rewrite_bot_results:
         db.jsonset('games', Path.rootPath(), GAMES)
+        db.jsonset('admins', Path.rootPath(), ADMINS)
 
 
 def main():
