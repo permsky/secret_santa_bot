@@ -1,4 +1,3 @@
-from logging import _FormatStyle
 import os
 from pprint import pprint
 
@@ -15,7 +14,7 @@ GAMES = {
     '1': {
         'participants': {
             '723702214': {
-                'email': 'rainbowf@mail.ru',
+                'email': 'rainbow@mail.ru',
                 'name': 'Виталий',
                 'wishlist': 'Книга',
                 'letter': 'Текст письма',
