@@ -47,6 +47,11 @@ def get_game_id(admin_id):
     return game_ids
 
 
+def get_toss_date(game_id):
+    db = get_database_connection()
+    return db.jsonget('games', Path(f'.{game_id}.toss_date'))
+
+
 def get_choosen_game_id(admin_id):
     db = get_database_connection()
     return db.jsonget('admins', Path(f'.{admin_id}.choosen'))

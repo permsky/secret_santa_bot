@@ -162,11 +162,51 @@ def make_toss(update, context):
         db_processing.change_game_status(game_id, client_id)
 
 
-def make_auto_toss(context: CallbackContext):
+def make_first_auto_toss(context: CallbackContext):
     admins = db_processing.get_admins()
     for admin_id in admins.keys():
         game_ids = db_processing.get_game_id(admin_id)
         for game_id in game_ids:
+            game_toss_date = db_processing.get_toss_date(game_id)
+            if game_toss_date != '25':
+                continue
+            participants = db_processing.get_participants(game_id)
+            if len(participants) < 3:
+                message_text = 'Количество участников должно быть больше двух'
+                context.bot.send_message(chat_id=admin_id, text=message_text)
+            else:
+                pairs = dict()
+                for number, person in enumerate(participants):
+                    if number + 1 == len(participants):
+                        pairs[person] = participants[0]
+                    else:
+                        pairs[person] = participants[number + 1]
+                    about_participant = db_processing.get_participant(
+                        game_id,
+                        pairs[person]
+                    )
+                    message_text = dedent(
+                        f'''Жеребьевка в игре “Тайный Санта” проведена! 
+                        \nСпешу сообщить кто тебе выпал.
+                        \nИмя: {about_participant['name']}
+                        \nE-mail: {about_participant['email']}
+                        \nСписок желаемых подарков: {about_participant['wishlist']}
+                        \nПисьмо Санте: {about_participant['letter']}
+                        '''
+                    )
+                    context.bot.send_message(chat_id=person, text=message_text)
+                db_processing.set_pairs(game_id, pairs)
+                db_processing.change_game_status(game_id, admin_id)
+
+
+def make_second_auto_toss(context: CallbackContext):
+    admins = db_processing.get_admins()
+    for admin_id in admins.keys():
+        game_ids = db_processing.get_game_id(admin_id)
+        for game_id in game_ids:
+            game_toss_date = db_processing.get_toss_date(game_id)
+            if game_toss_date != '31':
+                continue
             participants = db_processing.get_participants(game_id)
             if len(participants) < 3:
                 message_text = 'Количество участников должно быть больше двух'
@@ -211,10 +251,16 @@ def delete_participant(update, context):
 def run_bot(tg_token):
     updater = Updater(tg_token)
     j = updater.job_queue
-    first_wave = datetime(2021, 12, 25, 11, 30, 0, tzinfo=pytz.timezone('Europe/Moscow'))
-    j.run_once(make_auto_toss, first_wave)
-    second_wave = datetime(2021, 12, 31, 11, 30, 0, tzinfo=pytz.timezone('Europe/Moscow'))
-    j.run_once(make_auto_toss, second_wave)
+    first_wave_time = datetime(
+        2021, 12, 25, 11, 30, 0, 
+        tzinfo=pytz.timezone('Europe/Moscow')
+    )
+    j.run_once(make_first_auto_toss, first_wave_time)
+    second_wave_time = datetime(
+        2021, 12, 31, 11, 30, 0,
+        tzinfo=pytz.timezone('Europe/Moscow')
+    )
+    j.run_once(make_second_auto_toss, second_wave_time)
 
     dispatcher = updater.dispatcher
 
