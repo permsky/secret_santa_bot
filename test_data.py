@@ -6,9 +6,14 @@ from rejson import Client, Path
 
 
 ADMINS = {
-    '723702214': '1'
-}
-
+    '723702214': {
+        'games': {
+            '1': 'active',
+            '2': 'active',
+        },
+        'choosen': '1'
+    }
+}   
 
 GAMES = {
     '1': {
@@ -19,25 +24,55 @@ GAMES = {
                 'wishlist': 'Книга',
                 'letter': 'Текст письма',
             },
-            '123456789': {
+            '467648404': {
                 'email': 'example@mail.ru',
-                'name': 'Иван',
-                'wishlist': 'Книга',
+                'name': 'Антон',
+                'wishlist': 'Рыболовная приманка',
                 'letter': 'Текст письма',
             },
-            '123456780': {
+            '257792637': {
                 'email': 'example@gmail.ru',
-                'name': 'Василий',
+                'name': 'Екатерина',
                 'wishlist': 'Книга',
                 'letter': 'Текст письма',
             },
         },
         'cost_limitation': 'true',
         'cost_range': '1000-2000',
-        'toss_datetime': '2021-12-25 12:00:00',
+        'toss_date': '25',
         'sending_date': '2022-01-01',
         'registration_link':  'Здесь должна быть ссылка',
-        'game_creator': '723702214'
+        'game_creator': '723702214',
+        'game_name': 'Коллеги'
+    },
+    '2': {
+        'participants': {
+            '723702214': {
+                'email': 'rainbow@mail.ru',
+                'name': 'Виталий',
+                'wishlist': 'Книга',
+                'letter': 'Текст письма2',
+            },
+            '467648404': {
+                'email': 'example@mail.ru',
+                'name': 'Антон',
+                'wishlist': 'Книга',
+                'letter': 'Текст письма2',
+            },
+            '257792637': {
+                'email': 'example@gmail.ru',
+                'name': 'Екатерина',
+                'wishlist': 'Кружка',
+                'letter': 'Текст письма2',
+            },
+        },
+        'cost_limitation': 'true',
+        'cost_range': '1000-2000',
+        'toss_date': '31',
+        'sending_date': '2022-01-01',
+        'registration_link':  'Здесь должна быть ссылка',
+        'game_creator': '723702214',
+        'game_name': 'Друзья'
     }
 }
 
