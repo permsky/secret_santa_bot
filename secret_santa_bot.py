@@ -20,20 +20,25 @@ class States(Enum):
     START = 1
     CREATE_GAME = 2
     GAME_NAME = 3
-    COST_LIMITATION = 4
+    IS_COST_LIMIT = 4
     CHOOSE_COST_RANGE = 5
     CHOOSE_END_DATE = 6
-    CHOOSE_SENDING_DATE = 7
+    GAME_LINK = 7
     ADMIN = 8
     CHOOSE_GAME = 9
     GAME_MANAGING = 10
 
 
 def start(update, context):
-
+    admins = db_processing.get_admins()
+    message_text = ''
+    if str(update.message.chat_id) in admins:
+        message_text = '''
+            \nДоступна команда /admin для управления созданными вами играми
+        '''
     update.message.reply_text(
-        dedent('''\
-        Сервис для обмена новогодними подарками.
+        dedent(f'''\
+        Сервис для обмена новогодними подарками.{message_text}
         '''),
         reply_markup=keyboards.create_start_keyboard()
     )
@@ -46,7 +51,7 @@ def get_id(update, context):
     context.bot.send_message(chat_id=chat_id, text=message_text)
 
 
-def create_game(update, context):
+def start_create_game(update, context):
     update.message.reply_text(
         dedent('''\
         Организуй тайный обмен подарками, запусти праздничное настроение!
@@ -54,6 +59,62 @@ def create_game(update, context):
         reply_markup=keyboards.create_game_keyboard()
     )
     return States.CREATE_GAME
+
+
+def create_game(update, context):
+    admin_id = update.message.chat_id
+    game_id = db_processing.get_games_max_id() + 1
+    db_processing.create_new_game(game_id, admin_id)
+    update.message.reply_text(
+        dedent('''Придумайте название вашей игре'''),
+    )
+    return States.GAME_NAME
+
+
+def set_game_name(update, context):
+    db_processing.set_game_name(
+        update.message.text,
+        update.message.chat_id
+    )
+    update.message.reply_text(
+        dedent('''Установить ограничение стоимости подарка?'''),
+        reply_markup=keyboards.create_cost_limit_keyboard()
+    )
+    return States.IS_COST_LIMIT
+
+
+def set_cost_limit(update, context):
+    update.message.reply_text(
+        dedent('''Выберите ценовой диапазон подарка'''),
+        reply_markup=keyboards.create_choose_limit_keyboard()
+    )
+    return States.CHOOSE_COST_RANGE
+
+
+def go_next(update, context):
+    update.message.reply_text(
+        dedent('''Выберите период регистрации участников'''),
+        reply_markup=keyboards.create_choose_toss_date_keyboard()
+    )
+    return States.CHOOSE_END_DATE
+
+
+def choose_limit(update, context):
+    cost_range = update.message.text
+    admin_id = update.message.chat_id
+    db_processing.set_cost_limit(admin_id, cost_range)
+    return go_next(update, context)
+
+
+def add_toss_date(update, context):
+    toss_date = update.message.text
+    admin_id = update.message.chat_id
+    db_processing.set_toss_date(admin_id, toss_date)
+    db_processing.create_game(admin_id)
+    update.message.reply_text(
+        dedent('''Отлично, Тайный Санта уже готовится к раздаче подарков! '''),
+    )
+    return States.GAME_LINK
 
 
 def open_admin_panel(update, context):
@@ -121,9 +182,15 @@ def handle_unknown(update, context):
 
 
 def handle_cancel(update, context):
+    admins = db_processing.get_admins()
+    message_text = ''
+    if str(update.message.chat_id) in admins:
+        message_text = '''
+            \nДоступна команда /admin для управления созданными вами играми
+        '''
     update.message.reply_text(
-        dedent('''\
-        Сервис для обмена новогодними подарками.
+        dedent(f'''\
+        Сервис для обмена новогодними подарками.{message_text}
         '''),
         reply_markup=keyboards.create_start_keyboard()
     )
@@ -137,6 +204,7 @@ def make_toss(update, context):
     if len(participants) < 3:
         message_text = 'Количество участников должно быть больше двух'
         context.bot.send_message(chat_id=client_id, text=message_text)
+        return handle_cancel(update, context)
     else:
         pairs = dict()
         for number, person in enumerate(participants):
@@ -274,12 +342,58 @@ def run_bot(tg_token):
             States.START: [
                 MessageHandler(
                     Filters.regex('Старт$'),
+                    start_create_game
+                )
+            ],
+            States.CREATE_GAME: [
+                MessageHandler(
+                    Filters.regex('^Создать игру$'),
                     create_game
                 )
             ],
+            States.GAME_NAME: [
+                MessageHandler(
+                    Filters.regex(r'^\w+$'),
+                    set_game_name
+                )
+            ],
+            States.IS_COST_LIMIT: [
+                MessageHandler(
+                    Filters.regex('^Да$'),
+                    set_cost_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^Нет$'),
+                    go_next
+                ),
+            ],
+            States.CHOOSE_COST_RANGE: [
+                MessageHandler(
+                    Filters.regex('^До 500 рублей$'),
+                    choose_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^500-1000 рублей$'),
+                    choose_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^1000-2000 рублей$'),
+                    choose_limit
+                ),
+            ],
+            States.CHOOSE_END_DATE: [
+                MessageHandler(
+                    Filters.regex('^Регистрация до 25.12.2021$'),
+                    add_toss_date
+                ),
+                MessageHandler(
+                    Filters.regex('^Регистрация до 31.12.2021$'),
+                    add_toss_date
+                ),
+            ],
             States.ADMIN: [
                 MessageHandler(
-                    Filters.regex('Выбрать игру$'),
+                    Filters.regex('^Выбрать игру$'),
                     show_games
                 )
             ],

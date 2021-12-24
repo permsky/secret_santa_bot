@@ -27,6 +27,58 @@ def get_database_connection():
     return _database
 
 
+def get_games_max_id():
+    db = get_database_connection()
+    game_ids = [int(game_id) for game_id in
+        db.jsonobjkeys('games', Path.rootPath())]
+    return max(game_ids)
+
+
+def create_new_game(game_id, admin_id):
+    db = get_database_connection()
+    game_parameters = {
+        'participants': {},
+        'cost_limitation': '',
+        'cost_range': '',
+        'toss_date': '',
+        'registration_link': '',
+        'game_creator': str(admin_id),
+        'game_name': '',
+        'game_id': str(game_id),
+    }
+    db.jsonset('games', Path(f'.{game_id}'), game_parameters)
+    db.jsonset('admins', Path(f'.{admin_id}.games.{game_id}'), '')
+    db.jsonset('admins', Path(f'.{admin_id}.new_game'), game_parameters)
+
+
+def set_game_name(game_name, admin_id):
+    db = get_database_connection()
+    db.jsonset('admins', Path(f'.{admin_id}.new_game.game_name'), game_name)
+
+
+def set_cost_limit(admin_id, cost_range):
+    db = get_database_connection()
+    db.jsonset('admins', Path(f'.{admin_id}.new_game.cost_limitation'), 'true')
+    db.jsonset('admins', Path(f'.{admin_id}.new_game.cost_range'), cost_range)
+
+
+def set_toss_date(admin_id, toss_date):
+    db = get_database_connection()
+    if toss_date == 'Регистрация до 25.12.2021':
+        db.jsonset('admins', Path(f'.{admin_id}.new_game.toss_date'), '25')
+    if toss_date == 'Регистрация до 31.12.2021':
+        db.jsonset('admins', Path(f'.{admin_id}.new_game.toss_date'), '31')
+
+
+def create_game(admin_id):
+    db = get_database_connection()
+    new_game = db.jsonget('admins', Path(f'.{admin_id}.new_game'))
+    game_id = db.jsonget('admins', Path(f'.{admin_id}.new_game.game_id'))
+    db.jsonset('games', Path(f'.{game_id}'), new_game)
+    db.jsonset('admins', Path(f'.{admin_id}.games.{game_id}'), 'active')
+    db.jsonset('admins', Path(f'.{admin_id}.new_game'), {})
+
+
 def get_games():
     db = get_database_connection()
     return db.jsonget('games', Path.rootPath())

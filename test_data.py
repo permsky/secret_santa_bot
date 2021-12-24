@@ -40,8 +40,7 @@ GAMES = {
         'cost_limitation': 'true',
         'cost_range': '1000-2000',
         'toss_date': '25',
-        'sending_date': '2022-01-01',
-        'registration_link':  'Здесь должна быть ссылка',
+        'registration_link': 'Здесь должна быть ссылка',
         'game_creator': '723702214',
         'game_name': 'Коллеги'
     },
@@ -69,8 +68,7 @@ GAMES = {
         'cost_limitation': 'true',
         'cost_range': '1000-2000',
         'toss_date': '31',
-        'sending_date': '2022-01-01',
-        'registration_link':  'Здесь должна быть ссылка',
+        'registration_link': 'Здесь должна быть ссылка',
         'game_creator': '723702214',
         'game_name': 'Друзья'
     }
