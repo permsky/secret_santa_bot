@@ -98,3 +98,10 @@ def create_game_managing_keyboard():
         [KeyboardButton(text='Отмена')],
     ]
     return make_reply_markup(keyboard)
+
+def create_in_game_keyboard():
+    keyboard = [
+        [KeyboardButton(text='Участвовать в игре')],
+        [KeyboardButton(text='Отмена')],
+    ]
+    return make_reply_markup(keyboard)

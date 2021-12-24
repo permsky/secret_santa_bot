@@ -7,6 +7,8 @@ from textwrap import dedent
 from redis.exceptions import ResponseError
 from rejson import Client, Path
 
+from secret_santa_bot import delete_participant
+
 logger = logging.getLogger(__name__)
 _database = None
 
@@ -31,6 +33,8 @@ def get_games_max_id():
     db = get_database_connection()
     game_ids = [int(game_id) for game_id in
         db.jsonobjkeys('games', Path.rootPath())]
+    if not game_ids:
+        return 0
     return max(game_ids)
 
 
@@ -47,8 +51,13 @@ def create_new_game(game_id, admin_id):
         'game_id': str(game_id),
     }
     db.jsonset('games', Path(f'.{game_id}'), game_parameters)
-    db.jsonset('admins', Path(f'.{admin_id}.games.{game_id}'), '')
-    db.jsonset('admins', Path(f'.{admin_id}.new_game'), game_parameters)
+    admin = {
+        'games':{
+            game_id: ''
+        },
+        'new_game': game_parameters
+    }
+    db.jsonset('admins', Path(f'.{admin_id}'), admin)
 
 
 def set_game_name(game_name, admin_id):
@@ -68,6 +77,20 @@ def set_toss_date(admin_id, toss_date):
         db.jsonset('admins', Path(f'.{admin_id}.new_game.toss_date'), '25')
     if toss_date == 'Регистрация до 31.12.2021':
         db.jsonset('admins', Path(f'.{admin_id}.new_game.toss_date'), '31')
+
+
+def get_new_game_id(admin_id):
+    db = get_database_connection()
+    return db.jsonget('admins', Path(f'.{admin_id}.new_game.game_id'))
+
+
+def set_new_game_link(admin_id, game_id):
+    db = get_database_connection()
+    db.jsonset(
+        'admins',
+        Path(f'.{admin_id}.new_game.registration_link'),
+        f't.me/ShadowSantaBot?start={admin_id}{game_id}'
+    )
 
 
 def create_game(admin_id):
@@ -149,3 +172,76 @@ def set_choosen_game_id(game_name, client_id):
     db = get_database_connection()
     game_id = get_game_id_by_name(game_name, client_id)
     db.jsonset('admins', Path(f'.{client_id}.choosen'), game_id)
+
+
+def set_temp_participant(participant_id, game_id):
+    db = get_database_connection()
+    registration_game_id = {
+        'game_id': game_id
+    }
+    db.jsonset(
+        'participants',
+        Path(f'.{participant_id}'),
+        registration_game_id
+    )
+
+
+def get_temp_game_id(participant_id):
+    db = get_database_connection()
+    return db.jsonget('participants', Path(f'.{participant_id}.game_id'))
+
+
+def delete_temp_game_id(participant_id):
+    db = get_database_connection()
+    db.jsondel('participants', Path(f'.{participant_id}.game_id'))
+
+
+def set_participant_name(participant_name, participant_id):
+    db = get_database_connection()
+    db.jsonset(
+        'participants',
+        Path(f'.{participant_id}.name'),
+        participant_name
+    )
+
+
+def set_participant_email(participant_email, participant_id):
+    db = get_database_connection()
+    db.jsonset(
+        'participants',
+        Path(f'.{participant_id}.email'),
+        participant_email
+    )
+
+
+def set_participant_wishlist(participant_wishlist, participant_id):
+    db = get_database_connection()
+    db.jsonset(
+        'participants',
+        Path(f'.{participant_id}.wishlist'),
+        participant_wishlist
+    )
+
+
+def set_participant_letter(participant_letter, participant_id):
+    db = get_database_connection()
+    db.jsonset(
+        'participants',
+        Path(f'.{participant_id}.letter'),
+        participant_letter
+    )
+
+
+def set_participant(game_id, participant_id):
+    db = get_database_connection()
+    delete_temp_game_id(participant_id)
+    participant = db.jsonget(
+        'participants',
+        Path(f'.{participant_id}')
+    )
+    db.jsonset(
+        'games',
+        Path(f'.{game_id}.participants.{participant_id}'),
+        participant
+    )
+    db.jsondel('participant', Path(f'.{participant_id}'))

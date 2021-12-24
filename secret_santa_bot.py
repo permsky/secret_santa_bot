@@ -27,22 +27,113 @@ class States(Enum):
     ADMIN = 8
     CHOOSE_GAME = 9
     GAME_MANAGING = 10
+    IN_GAME = 11
+    INPUT_NAME = 12
+    INPUT_EMAIL = 13
+    INPUT_WISHLIST = 14
+    INPUT_LETTER = 15
+
+
+def parse_input(update, context):
+    user_input = update.message.text
+    admin_id = ''
+    game_id = ''
+    if '/start' in user_input and len(user_input) > 16:
+        admin_id = user_input[7:16]
+        game_id = user_input[16:]
+    return admin_id, game_id
 
 
 def start(update, context):
-    admins = db_processing.get_admins()
-    message_text = ''
-    if str(update.message.chat_id) in admins:
-        message_text = '''
-            \nДоступна команда /admin для управления созданными вами играми
-        '''
+    admin_id, game_id = parse_input(update, context)
+    if admin_id and game_id:
+        db_processing.set_temp_participant(
+            update.message.chat_id,
+            game_id
+        )
+        update.message.reply_text(
+            dedent(f'''\
+            Замечательно, ты собираешься участвовать в игре:
+            '''),
+            reply_markup=keyboards.create_in_game_keyboard()
+        )
+        return States.IN_GAME
+    else:    
+        admins = db_processing.get_admins()
+        message_text = ''
+        if str(update.message.chat_id) in admins:
+            message_text = '''
+                \nДоступна команда /admin для управления созданными вами играми
+            '''
+        update.message.reply_text(
+            dedent(f'''\
+            Сервис для обмена новогодними подарками.{message_text}
+            '''),
+            reply_markup=keyboards.create_start_keyboard()
+        )
+        return States.START
+
+
+def take_part_in_game(update, context):
     update.message.reply_text(
-        dedent(f'''\
-        Сервис для обмена новогодними подарками.{message_text}
-        '''),
-        reply_markup=keyboards.create_start_keyboard()
-    )
-    return States.START
+            dedent('''\
+            Введите свое имя:
+            ''')
+        )
+    return States.INPUT_NAME
+
+
+def handle_input_name(update, context):
+    participant_name = update.message.text
+    participant_id = update.message.chat_id
+    db_processing.set_participant_name(participant_name, participant_id)
+    update.message.reply_text(
+            dedent('''\
+            Введите свой email:
+            ''')
+        )
+    return States.INPUT_EMAIL
+
+
+def handle_input_email(update, context):
+    participant_email = update.message.text
+    participant_id = update.message.chat_id
+    db_processing.set_participant_email(participant_email, participant_id)
+    update.message.reply_text(
+            dedent('''\
+            Введите свой вишлист:
+            ''')
+        )
+    return States.INPUT_WISHLIST
+
+
+def handle_input_wishlist(update, context):
+    participant_wishlist = update.message.text
+    participant_id = update.message.chat_id
+    db_processing.set_participant_wishlist(participant_wishlist, participant_id)
+    update.message.reply_text(
+            dedent('''\
+            Напишите письмо Санте:
+            ''')
+        )
+    return States.INPUT_LETTER
+
+
+def handle_input_letter(update, context):
+    participant_letter = update.message.text
+    participant_id = update.message.chat_id
+    db_processing.set_participant_letter(participant_letter, participant_id)
+    game_id = db_processing.get_temp_game_id(participant_id)
+    toss_date = db_processing.get_toss_date(game_id)
+    update.message.reply_text(
+            dedent(f'''\
+            \nПревосходно, ты в игре! {toss_date}.12.2021 мы проведем жеребьевку
+            \nи ты узнаешь имя и контакты своего тайного друга.
+            \nЕму и нужно будет подарить подарок!
+            ''')
+        )
+    db_processing.set_participant(game_id, participant_id)
+    return States.INPUT_LETTER
 
 
 def get_id(update, context):
@@ -109,12 +200,17 @@ def choose_limit(update, context):
 def add_toss_date(update, context):
     toss_date = update.message.text
     admin_id = update.message.chat_id
+    game_id = db_processing.get_new_game_id(admin_id)
+    db_processing.set_new_game_link(admin_id, game_id)
     db_processing.set_toss_date(admin_id, toss_date)
     db_processing.create_game(admin_id)
     update.message.reply_text(
         dedent('''Отлично, Тайный Санта уже готовится к раздаче подарков! '''),
     )
-    return States.GAME_LINK
+    update.message.reply_text(
+        dedent(f'''t.me/ShadowSantaBot?start={admin_id}{game_id}'''),
+    )
+    return States.START
 
 
 def open_admin_panel(update, context):
@@ -334,7 +430,7 @@ def run_bot(tg_token):
 
     conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler('start', start),
+            CommandHandler('start', start, pass_args=True),
             CommandHandler('admin', open_admin_panel),
             CommandHandler('id', get_id),
         ],
@@ -421,9 +517,39 @@ def run_bot(tg_token):
                     delete_participant
                 ),
             ],
+            States.IN_GAME: [
+                MessageHandler(
+                    Filters.regex('^Участвовать в игре$'),
+                    take_part_in_game
+                )
+            ],
+            States.INPUT_NAME: [
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    handle_input_name
+                ),
+            ],
+            States.INPUT_EMAIL: [
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    handle_input_email
+                ),
+            ],
+            States.INPUT_WISHLIST: [
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    handle_input_wishlist
+                ),
+            ],
+            States.INPUT_LETTER: [
+                MessageHandler(
+                    Filters.text & ~Filters.command,
+                    handle_input_letter
+                ),
+            ],
         },
         fallbacks=[
-            CommandHandler('start', start),
+            CommandHandler('start', start, pass_args=True),
             CommandHandler('admin', open_admin_panel),
             CommandHandler('id', get_id),
             MessageHandler(Filters.regex('^Отмена$'), handle_cancel),

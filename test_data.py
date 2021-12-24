@@ -74,6 +74,10 @@ GAMES = {
     }
 }
 
+GAMES1 = {}
+ADMINS1 = {}
+PARTICIPANTS = {}
+
 
 def get_database_connection():
     database_password = os.getenv("DB_PASSWORD", default=None)
@@ -95,12 +99,16 @@ def print_db_content(db):
     admins = db.jsonget('admins', Path.rootPath())
     print('\nСписок администраторов игр:')
     pprint(admins)
+    participants = db.jsonget('participants', Path.rootPath())
+    print('\nСписок участников игр:')
+    pprint(participants)
 
 
 def load_test_data_to_db(db, rewrite_bot_results=False):
     if rewrite_bot_results:
-        db.jsonset('games', Path.rootPath(), GAMES)
-        db.jsonset('admins', Path.rootPath(), ADMINS)
+        db.jsonset('games', Path.rootPath(), GAMES1)
+        db.jsonset('admins', Path.rootPath(), ADMINS1)
+        db.jsonset('participants', Path.rootPath(), PARTICIPANTS)
 
 
 def main():
