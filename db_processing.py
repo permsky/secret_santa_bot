@@ -1,13 +1,7 @@
 import logging
 import os
 import random
-from datetime import date, timedelta
-from textwrap import dedent
-
-from redis.exceptions import ResponseError
 from rejson import Client, Path
-
-from secret_santa_bot import delete_participant
 
 logger = logging.getLogger(__name__)
 _database = None

@@ -1,5 +1,3 @@
-from textwrap import dedent
-
 from telegram import KeyboardButton, ReplyKeyboardMarkup
 
 import db_processing
