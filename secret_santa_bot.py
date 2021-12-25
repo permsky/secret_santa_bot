@@ -47,14 +47,34 @@ def parse_input(update, context):
 def start(update, context):
     admin_id, game_id = parse_input(update, context)
     if admin_id and game_id:
-        db_processing.set_temp_participant(
-            update.message.chat_id,
-            game_id
+        chat_id = update.message.chat_id
+        game_name = db_processing.get_game_name(game_id)
+        if db_processing.get_participant(game_id, chat_id):
+            update.message.reply_text(f'Вы уже участвуете в игре {game_name}')
+            return States.START
+        toss_date_day = db_processing.get_toss_date(game_id)
+        toss_date = datetime(
+            year=2021,
+            month=12,
+            day=toss_date_day,
+            hour=12,
+            tzinfo=pytz.timezone('Europe/Moscow')
         )
+        if datetime.now(tz=pytz.timezone('Europe/Moscow')) > toss_date:
+            update.message.reply_text(f'Период регистрации на игру окончен')
+            return States.START
+        db_processing.set_temp_participant(chat_id, game_id)
+        cost_range = db_processing.get_cost_range(game_id)
+        if not cost_range:
+            cost_range = 'Нет'
         update.message.reply_text(
             dedent(f'''\
-            Замечательно, ты собираешься участвовать в игре:
-            '''),
+                Замечательно, ты собираешься участвовать в игре.
+                \nНазвание игры: {game_name}
+                \nОграничение стоимости подарка: {cost_range}
+                \nПериод регистрации: до {toss_date_day} декабря
+                '''
+            ),
             reply_markup=keyboards.create_in_game_keyboard()
         )
         return States.IN_GAME

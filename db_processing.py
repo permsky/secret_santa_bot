@@ -154,6 +154,11 @@ def get_game_name(game_id):
     return db.jsonget('games', Path(f'.{game_id}.game_name'))
 
 
+def get_cost_range(game_id):
+    db = get_database_connection()
+    return db.jsonget('games', Path(f'.{game_id}.cost_range'))
+
+
 def get_game_id_by_name(game_name, admin_id):
     db = get_database_connection()
     game_ids = get_game_id(admin_id)
