@@ -168,7 +168,10 @@ def change_game_status(game_id, client_id):
 
 def get_participant(game_id, client_id):
     db = get_database_connection()
-    return db.jsonget('games', Path(f'.{game_id}.participants.{client_id}'))
+    try:
+        return db.jsonget('games', Path(f'.{game_id}.participants.{client_id}'))
+    except:
+        return None
 
 
 def get_game_name(game_id):
