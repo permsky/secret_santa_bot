@@ -32,6 +32,11 @@ class States(Enum):
     INPUT_EMAIL = 13
     INPUT_WISHLIST = 14
     INPUT_LETTER = 15
+    CHANGE_GAME_PARAMS = 16
+    CHANGE_GAME_NAME = 17
+    CHOOSE_NEW_COST_RANGE = 18
+    CHOOSE_NEW_TOSS_DATE = 19
+
 
 
 def parse_input(update, context):
@@ -240,9 +245,8 @@ def open_admin_panel(update, context):
         update.message.reply_text(
             dedent('''\
             Вы в панели администратора вашей игры.
-            \nВы можете изменить информацию об игре, добавить
-            \nили удалить участника игры,
-            \nпровести жеребьевку вручную.
+            \nВы можете изменить информацию об игре
+            \nили провести жеребьевку вручную.
             '''),
             reply_markup=keyboards.create_admin_keyboard(client_id)
         )
@@ -420,8 +424,93 @@ def make_second_auto_toss(context: CallbackContext):
                 db_processing.change_game_status(game_id, admin_id)
 
 
-def change_game_info(update, context):
-    pass
+def change_game_params(update, context):
+    client_id = update.message.chat_id
+    game_id = db_processing.get_choosen_game_id(client_id)
+    update.message.reply_text(
+        dedent('''Выберите опцию'''),
+        reply_markup=keyboards.create_change_game_params_keyboard(game_id)
+    )
+    return States.CHANGE_GAME_PARAMS
+
+
+def change_game_name(update, context):
+    client_id = update.message.chat_id
+    game_id = db_processing.get_choosen_game_id(client_id)
+    update.message.reply_text(
+        dedent(f'''Введите новое название игры:''')
+    )
+    return States.CHANGE_GAME_NAME
+
+
+def set_game_new_name(update, context):
+    client_id = update.message.chat_id
+    game_name = update.message.text
+    game_id = db_processing.get_choosen_game_id(client_id)
+    db_processing.set_game_new_name(
+        game_name,
+        game_id
+    )
+    update.message.reply_text(
+        dedent(f'''Название игры изменено на {game_name}'''),
+        reply_markup=keyboards.create_change_game_params_keyboard(game_id)
+    )
+    return States.CHANGE_GAME_PARAMS
+
+
+def change_cost_limit(update, context):
+    client_id = update.message.chat_id
+    game_id = db_processing.get_choosen_game_id(client_id)
+    update.message.reply_text(
+        dedent('''Выберите диапазон цен подарка:'''),
+        reply_markup=keyboards.create_choose_limit_keyboard()
+    )
+    return States.CHOOSE_NEW_COST_RANGE
+
+
+def change_limit(update, context):
+    client_id = update.message.chat_id
+    cost_range = update.message.text
+    game_id = db_processing.get_choosen_game_id(client_id)
+    db_processing.set_new_cost_limit(cost_range, game_id)
+    update.message.reply_text(
+        dedent(f'''Установлено ограничение на цену подарка {cost_range.lower()}'''),
+        reply_markup=keyboards.create_change_game_params_keyboard(game_id)
+    )
+    return States.CHANGE_GAME_PARAMS
+
+
+def del_cost_limit(update, context):
+    client_id = update.message.chat_id
+    game_id = db_processing.get_choosen_game_id(client_id)
+    db_processing.del_cost_limit(game_id)
+    update.message.reply_text(
+        dedent(f'''Удалено ограничение на цену подарка'''),
+        reply_markup=keyboards.create_change_game_params_keyboard(game_id)
+    )
+    return States.CHANGE_GAME_PARAMS
+
+
+def choose_toss_date(update, context):
+    client_id = update.message.chat_id
+    game_id = db_processing.get_choosen_game_id(client_id)
+    update.message.reply_text(
+        dedent(f'''Выберите период регистрации:'''),
+        reply_markup=keyboards.create_choose_toss_date_keyboard()
+    )
+    return States.CHOOSE_NEW_TOSS_DATE
+
+
+def change_toss_date(update, context):
+    client_id = update.message.chat_id
+    game_id = db_processing.get_choosen_game_id(client_id)
+    toss_date = update.message.text[15:17]
+    db_processing.change_toss_date(game_id, toss_date)
+    update.message.reply_text(
+        dedent(f'''Установлен период регистрации до {toss_date} декабря'''),
+        reply_markup=keyboards.create_change_game_params_keyboard(game_id)
+    )
+    return States.CHANGE_GAME_PARAMS
 
 
 def add_participant(update, context):
@@ -526,15 +615,59 @@ def run_bot(tg_token):
                 ),
                 MessageHandler(
                     Filters.regex('^Изменить информацию об игре$'),
-                    change_game_info
+                    change_game_params
+                ),
+            ],
+            States.CHANGE_GAME_PARAMS: [
+                MessageHandler(
+                    Filters.regex('^Изменить название игры$'),
+                    change_game_name
                 ),
                 MessageHandler(
-                    Filters.regex('^Добавить участника$'),
-                    add_participant
+                    Filters.regex('^Изменить ценовой диапазон$'),
+                    change_cost_limit
                 ),
                 MessageHandler(
-                    Filters.regex('^Удалить участника$'),
-                    delete_participant
+                    Filters.regex('^Установить ценовой диапазон$'),
+                    change_cost_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^Убрать ценовой диапазон$'),
+                    del_cost_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^Изменить период регистрации$'),
+                    choose_toss_date
+                ),
+            ],
+            States.CHOOSE_NEW_TOSS_DATE: [
+                MessageHandler(
+                    Filters.regex('^Регистрация до 25.12.2021$'),
+                    change_toss_date
+                ),
+                MessageHandler(
+                    Filters.regex('^Регистрация до 31.12.2021$'),
+                    change_toss_date
+                ),
+            ],
+            States.CHANGE_GAME_NAME: [
+                MessageHandler(
+                    Filters.regex(r'^\w+$'),
+                    set_game_new_name
+                ),
+            ],
+            States.CHOOSE_NEW_COST_RANGE: [
+                MessageHandler(
+                    Filters.regex('^До 500 рублей$'),
+                    change_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^500-1000 рублей$'),
+                    change_limit
+                ),
+                MessageHandler(
+                    Filters.regex('^1000-2000 рублей$'),
+                    change_limit
                 ),
             ],
             States.IN_GAME: [

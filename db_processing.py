@@ -59,6 +59,28 @@ def set_game_name(game_name, admin_id):
     db.jsonset('admins', Path(f'.{admin_id}.new_game.game_name'), game_name)
 
 
+def set_game_new_name(game_name, game_id):
+    db = get_database_connection()
+    db.jsonset('games', Path(f'.{game_id}.game_name'), game_name)
+
+
+def set_new_cost_limit(cost_range, game_id):
+    db = get_database_connection()
+    db.jsonset('games', Path(f'.{game_id}.cost_limitation'), 'true')
+    db.jsonset('games', Path(f'.{game_id}.cost_range'), cost_range)
+
+
+def del_cost_limit(game_id):
+    db = get_database_connection()
+    db.jsonset('games', Path(f'.{game_id}.cost_limitation'), '')
+    db.jsonset('games', Path(f'.{game_id}.cost_range'), '')
+
+
+def change_toss_date(game_id, toss_date):
+    db = get_database_connection()
+    db.jsonset('games', Path(f'.{game_id}.toss_date'), toss_date)
+
+
 def set_cost_limit(admin_id, cost_range):
     db = get_database_connection()
     db.jsonset('admins', Path(f'.{admin_id}.new_game.cost_limitation'), 'true')

@@ -71,8 +71,6 @@ def create_admin_keyboard(admin_id):
         keyboard = [
             [KeyboardButton(text='Провести жеребьевку')],
             [KeyboardButton(text='Изменить информацию об игре')],
-            [KeyboardButton(text='Добавить участника')],
-            [KeyboardButton(text='Удалить участника')],
             [KeyboardButton(text='Отмена')],
         ]
         return make_reply_markup(keyboard)
@@ -91,11 +89,29 @@ def create_game_managing_keyboard():
     keyboard = [
         [KeyboardButton(text='Провести жеребьевку')],
         [KeyboardButton(text='Изменить информацию об игре')],
-        [KeyboardButton(text='Добавить участника')],
-        [KeyboardButton(text='Удалить участника')],
         [KeyboardButton(text='Отмена')],
     ]
     return make_reply_markup(keyboard)
+
+
+def create_change_game_params_keyboard(game_id):
+    if db_processing.get_cost_range(game_id):
+        keyboard = [
+            [KeyboardButton(text='Изменить название игры')],
+            [KeyboardButton(text='Изменить ценовой диапазон')],
+            [KeyboardButton(text='Убрать ценовой диапазон')],
+            [KeyboardButton(text='Изменить период регистрации')],
+            [KeyboardButton(text='Отмена')],
+        ]
+    else:
+        keyboard = [
+            [KeyboardButton(text='Изменить название игры')],
+            [KeyboardButton(text='Установить ценовой диапазон')],
+            [KeyboardButton(text='Изменить период регистрации')],
+            [KeyboardButton(text='Отмена')],
+        ]
+    return make_reply_markup(keyboard)
+
 
 def create_in_game_keyboard():
     keyboard = [
