@@ -61,7 +61,7 @@ def start(update, context):
         toss_date = datetime(
             year=2021,
             month=12,
-            day=toss_date_day,
+            day=int(toss_date_day),
             hour=12,
             tzinfo=pytz.timezone('Europe/Moscow')
         )
