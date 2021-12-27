@@ -45,13 +45,16 @@ def create_new_game(game_id, admin_id):
         'game_id': str(game_id),
     }
     db.jsonset('games', Path(f'.{game_id}'), game_parameters)
-    admin = {
-        'games':{
-            game_id: ''
-        },
-        'new_game': game_parameters
-    }
-    db.jsonset('admins', Path(f'.{admin_id}'), admin)
+    if db.jsonget('admins', Path(f'.{admin_id}')):
+        db.jsonset('admins', Path(f'.{admin_id}.games.{game_id}'), '')
+    else:
+        admin = {
+            'games':{
+                game_id: ''
+            },
+            'new_game': game_parameters
+        }
+        db.jsonset('admins', Path(f'.{admin_id}'), admin)
 
 
 def set_game_name(game_name, admin_id):
