@@ -32,6 +32,11 @@ def get_games_max_id():
     return max(game_ids)
 
 
+def get_admins():
+    db = get_database_connection()
+    return db.jsonget('admins', Path.rootPath())
+
+
 def create_new_game(game_id, admin_id):
     db = get_database_connection()
     game_parameters = {
@@ -45,9 +50,10 @@ def create_new_game(game_id, admin_id):
         'game_id': str(game_id),
     }
     db.jsonset('games', Path(f'.{game_id}'), game_parameters)
-    if not db.jsonget('admins', Path.rootPath()):
-        db.jsonset('admins', Path(f'.{admin_id}'), {})
-    if db.jsonget('admins', Path(f'.{admin_id}')):
+    admins = get_admins()
+    if admins:
+        admins = admins.keys()
+    if admin_id in admins:
         db.jsonset('admins', Path(f'.{admin_id}.games.{game_id}'), '')
         db.jsonset('admins', Path(f'.{admin_id}.new_game'), game_parameters)
     else:
@@ -67,6 +73,7 @@ def set_game_name(game_name, admin_id):
 
 def set_game_new_name(game_name, game_id):
     db = get_database_connection()
+
     db.jsonset('games', Path(f'.{game_id}.game_name'), game_name)
 
 
@@ -127,11 +134,6 @@ def create_game(admin_id):
 def get_games():
     db = get_database_connection()
     return db.jsonget('games', Path.rootPath())
-
-
-def get_admins():
-    db = get_database_connection()
-    return db.jsonget('admins', Path.rootPath())
 
 
 def get_game_id(admin_id):
